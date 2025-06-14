@@ -1,129 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Home, List, AlertCircle } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import Dashboard from '@/components/Dashboard';
 import RecordsList from '@/components/RecordsList';
 import RecordForm from '@/components/RecordForm';
-
-interface FinanceRecord {
-  id: number;
-  data_hora: string;
-  responsavel: string;
-  categoria: string;
-  tipo: 'gasto' | 'receita';
-  valor: number;
-  descricao: string;
-  criado_em: string;
-}
+import { useFinanceRecords, type FinanceRecord } from '@/hooks/useFinanceRecords';
 
 const Index = () => {
-  const [records, setRecords] = useState<FinanceRecord[]>([]);
+  const { records, loading, addRecord, updateRecord, deleteRecord } = useFinanceRecords();
   const [showForm, setShowForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<FinanceRecord | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [loading, setLoading] = useState(true);
-
-  // Dados de exemplo para demonstração
-  const sampleRecords: FinanceRecord[] = [
-    {
-      id: 1,
-      data_hora: '2024-06-10T14:30:00Z',
-      responsavel: 'João',
-      categoria: 'Alimentação',
-      tipo: 'gasto',
-      valor: 150.50,
-      descricao: 'Compras no supermercado',
-      criado_em: '2024-06-10T14:30:00Z'
-    },
-    {
-      id: 2,
-      data_hora: '2024-06-09T09:00:00Z',
-      responsavel: 'Maria',
-      categoria: 'Salário',
-      tipo: 'receita',
-      valor: 3500.00,
-      descricao: 'Salário mensal',
-      criado_em: '2024-06-09T09:00:00Z'
-    },
-    {
-      id: 3,
-      data_hora: '2024-06-08T16:45:00Z',
-      responsavel: 'João',
-      categoria: 'Transporte',
-      tipo: 'gasto',
-      valor: 25.00,
-      descricao: 'Uber para o trabalho',
-      criado_em: '2024-06-08T16:45:00Z'
-    },
-    {
-      id: 4,
-      data_hora: '2024-06-07T19:30:00Z',
-      responsavel: 'Maria',
-      categoria: 'Lazer',
-      tipo: 'gasto',
-      valor: 80.00,
-      descricao: 'Cinema com a família',
-      criado_em: '2024-06-07T19:30:00Z'
-    },
-    {
-      id: 5,
-      data_hora: '2024-06-06T10:15:00Z',
-      responsavel: 'Pedro',
-      categoria: 'Freelance',
-      tipo: 'receita',
-      valor: 450.00,
-      descricao: 'Projeto de design',
-      criado_em: '2024-06-06T10:15:00Z'
-    }
-  ];
-
-  useEffect(() => {
-    // Simula carregamento dos dados
-    setTimeout(() => {
-      setRecords(sampleRecords);
-      setLoading(false);
-    }, 1000);
-  }, []);
 
   const handleSaveRecord = async (recordData: Omit<FinanceRecord, 'id' | 'criado_em'>) => {
     try {
       if (editingRecord) {
-        // Atualizar registro existente
-        const updatedRecord = {
-          ...editingRecord,
-          ...recordData
-        };
-        setRecords(prev => prev.map(r => r.id === editingRecord.id ? updatedRecord : r));
-        toast({
-          title: "Registro atualizado!",
-          description: "O registro foi atualizado com sucesso.",
-        });
+        await updateRecord(editingRecord.id, recordData);
       } else {
-        // Criar novo registro
-        const newRecord: FinanceRecord = {
-          ...recordData,
-          id: Math.max(...records.map(r => r.id), 0) + 1,
-          criado_em: new Date().toISOString()
-        };
-        setRecords(prev => [newRecord, ...prev]);
-        toast({
-          title: "Registro criado!",
-          description: "O novo registro foi adicionado com sucesso.",
-        });
+        await addRecord(recordData);
       }
       
       setShowForm(false);
       setEditingRecord(null);
     } catch (error) {
-      toast({
-        title: "Erro!",
-        description: "Não foi possível salvar o registro. Tente novamente.",
-        variant: "destructive"
-      });
+      // Error handling is done in the hook
+      console.error('Error saving record:', error);
     }
   };
 
@@ -135,17 +39,10 @@ const Index = () => {
   const handleDeleteRecord = async (id: number) => {
     if (window.confirm('Tem certeza que deseja excluir este registro?')) {
       try {
-        setRecords(prev => prev.filter(r => r.id !== id));
-        toast({
-          title: "Registro excluído!",
-          description: "O registro foi removido com sucesso.",
-        });
+        await deleteRecord(id);
       } catch (error) {
-        toast({
-          title: "Erro!",
-          description: "Não foi possível excluir o registro. Tente novamente.",
-          variant: "destructive"
-        });
+        // Error handling is done in the hook
+        console.error('Error deleting record:', error);
       }
     }
   };
@@ -193,22 +90,37 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Aviso sobre Supabase */}
+      {/* Informação sobre dados */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-medium text-blue-800">
-                Conecte ao Supabase para funcionalidade completa
-              </h3>
-              <p className="text-sm text-blue-700 mt-1">
-                Esta aplicação está usando dados de exemplo. Para conectar ao banco de dados real, 
-                clique no botão verde "Supabase" no canto superior direito e configure sua integração.
-              </p>
+        {records.length === 0 ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Nenhum registro encontrado
+                </h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Comece adicionando seu primeiro registro financeiro clicando no botão "Novo Registro".
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-green-600 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-medium text-green-800">
+                  Dados conectados com sucesso!
+                </h3>
+                <p className="text-sm text-green-700 mt-1">
+                  Mostrando {records.length} registro(s) do seu banco de dados Supabase.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Conteúdo Principal */}
