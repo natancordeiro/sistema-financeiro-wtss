@@ -34,7 +34,8 @@ export const useFinanceRecords = () => {
       }
 
       console.log('Records fetched:', data);
-      setRecords(data || []);
+      // Type assertion to ensure data matches our FinanceRecord interface
+      setRecords((data || []) as FinanceRecord[]);
     } catch (error) {
       console.error('Error in fetchRecords:', error);
       toast({
@@ -63,14 +64,15 @@ export const useFinanceRecords = () => {
       }
 
       console.log('Record added:', data);
-      setRecords(prev => [data, ...prev]);
+      // Type assertion for the new record
+      setRecords(prev => [data as FinanceRecord, ...prev]);
       
       toast({
         title: "Registro criado!",
         description: "O novo registro foi adicionado com sucesso.",
       });
 
-      return data;
+      return data as FinanceRecord;
     } catch (error) {
       console.error('Error in addRecord:', error);
       toast({
@@ -99,14 +101,15 @@ export const useFinanceRecords = () => {
       }
 
       console.log('Record updated:', data);
-      setRecords(prev => prev.map(r => r.id === id ? data : r));
+      // Type assertion for the updated record
+      setRecords(prev => prev.map(r => r.id === id ? data as FinanceRecord : r));
       
       toast({
         title: "Registro atualizado!",
         description: "O registro foi atualizado com sucesso.",
       });
 
-      return data;
+      return data as FinanceRecord;
     } catch (error) {
       console.error('Error in updateRecord:', error);
       toast({
